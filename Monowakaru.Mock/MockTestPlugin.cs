@@ -1,18 +1,16 @@
-﻿namespace Monowakaru;
-
-using Autofac;
+﻿using Autofac;
 using DalaMock.Core.Mocks;
 using DalaMock.Core.Windows;
 using DalaMock.Shared.Interfaces;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Microsoft.Extensions.Logging;
 
-public class MockPlugin : Plugin
+namespace Monowakaru.Mock;
+
+public class MockTestPlugin : TestPlugin
 {
-
-    public MockPlugin(IDalamudPluginInterface pluginInterface, IPluginLog pluginLog)
-        : base(pluginInterface, pluginLog)
+    public MockTestPlugin(IDalamudPluginInterface pluginInterface, IPluginLog pluginLog)
+        : base(pluginInterface)
     {
         pluginLog.Info("Plugin mock started");
     }

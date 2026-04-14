@@ -1,6 +1,6 @@
-﻿namespace Monowakaru;
+﻿using DalaMock.Core.DI;
 
-using DalaMock.Core.DI;
+namespace Monowakaru.Mock;
 
 internal static class Program
 {
@@ -9,7 +9,7 @@ internal static class Program
         var mockContainer = new MockContainer();
         var mockDalamudUi = mockContainer.GetMockUi();
         var pluginLoader = mockContainer.GetPluginLoader();
-        var mockPlugin = pluginLoader.AddPlugin(typeof(MockPlugin));
+        var mockPlugin = pluginLoader.AddPlugin(typeof(MockTestPlugin));
         pluginLoader.StartPlugin(mockPlugin);
         mockDalamudUi.Run();
     }

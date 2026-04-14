@@ -1,21 +1,18 @@
-﻿namespace Monowakaru;
-
-using System.Reflection;
-
+﻿using System.Reflection;
 using Autofac;
 using DalaMock.Host.Hosting;
-using Services;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Monowakaru.Services;
 
-public class Plugin : HostedPlugin
+namespace Monowakaru;
+
+public class TestPlugin : HostedPlugin
 {
-    public Plugin(
-        IDalamudPluginInterface pluginInterface,
-        IPluginLog pluginLog)
-        : base(pluginInterface, pluginLog)
+    public TestPlugin(
+        IDalamudPluginInterface pluginInterface)
+        : base(pluginInterface)
     {
         CreateHost();
         Start();
@@ -39,6 +36,7 @@ public class Plugin : HostedPlugin
         containerBuilder.RegisterType<WindowService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<ConfigurationService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<CommandService>().AsSelf().AsImplementedInterfaces().SingleInstance();
+        containerBuilder.RegisterType<HotkeyService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<InstallerWindowService>().AsSelf().AsImplementedInterfaces().SingleInstance();
 
         // Register every class ending in Window inside our assembly with the container
