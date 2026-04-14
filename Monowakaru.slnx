@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Monowakaru.Mock/Monowakaru.Mock.csproj" />
+  <Project Path="Monowakaru/Monowakaru.csproj" />
+</Solution>
