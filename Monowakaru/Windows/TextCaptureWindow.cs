@@ -1,54 +1,44 @@
 using System.Collections.Generic;
 using System.Numerics;
+using DalaMock.Host.Mediator;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
 using JetBrains.Annotations;
+using Monowakaru.Mediator;
 using Monowakaru.Services;
 
 namespace Monowakaru.Windows;
 
 [UsedImplicitly]
-public class TextCaptureWindow : Window
+public class TextCaptureWindow : Window, IMediatorSubscriber
 {
-    private readonly IKeyState _keyState;
-    private readonly IPluginLog _log;
-    private readonly TextCaptureService _textCaptureService;
-    private IReadOnlyList<TextCapture> _lastCapture;
+    private IReadOnlyList<TextCapture> _lastCapture = [];
     private int _lastCount;
-    private bool _wasApostropheDown;
 
-    public TextCaptureWindow(TextCaptureService textCaptureService, IPluginLog log, IKeyState keyState)
+    public TextCaptureWindow(MediatorService mediatorService)
         : base("Text Capture##monowakaru-debug")
     {
-        _textCaptureService = textCaptureService;
-        _log = log;
-        _keyState = keyState;
-        _lastCapture = [];
+        MediatorService = mediatorService;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(500, 300),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
+        MediatorService.Subscribe<TextCaptureResultMessage>(this, OnCapture);
+    }
+
+    public MediatorService MediatorService { get; }
+
+    private void OnCapture(TextCaptureResultMessage msg)
+    {
+        _lastCapture = msg.Captures;
+        IsOpen = true;
     }
 
     public override void Draw()
     {
-        var isApostropheDown = _keyState[VirtualKey.OEM_7];
-        if (!isApostropheDown || _wasApostropheDown) return;
-
-        var mousePos = ImGui.GetMousePos();
-        _log.Verbose("[TextCapture] Hotkey pressed at ({X}, {Y})", mousePos.X, mousePos.Y);
-        _textCaptureService.CaptureNodesAt(mousePos);
-
-        _wasApostropheDown = isApostropheDown;
-
-        _lastCapture = _textCaptureService.CaptureNodesAt(mousePos);
-
-        ImGui.Text($"{_lastCapture.Count} captures at ({mousePos.X}, {mousePos.Y})");
-        ImGui.SameLine();
+        ImGui.Text($"{_lastCapture.Count} captures");
         ImGui.Separator();
 
         var tableFlags = ImGuiTableFlags.ScrollY
@@ -57,10 +47,9 @@ public class TextCaptureWindow : Window
                          | ImGuiTableFlags.BordersInnerV
                          | ImGuiTableFlags.SizingStretchProp;
 
-        // Leave room for separator + button row above
         var tableSize = new Vector2(0, ImGui.GetContentRegionAvail().Y);
 
-        using var table = ImRaii.Table("captures", 4, tableFlags, tableSize);
+        using var table = ImRaii.Table("captures", 3, tableFlags, tableSize);
         if (!table) return;
 
         ImGui.TableSetupScrollFreeze(0, 1);
@@ -82,17 +71,11 @@ public class TextCaptureWindow : Window
 
             ImGui.TableSetColumnIndex(2);
             if (ImGui.Button($"Copy##{i}"))
-                CopyCaptureIntoClipboard(entry);
+                ImGui.SetClipboardText(entry.Text);
         }
 
-        // Auto-scroll to bottom when new entries arrive
         if (_lastCapture.Count <= _lastCount) return;
         ImGui.SetScrollHereY(1.0f);
         _lastCount = _lastCapture.Count;
-    }
-
-    private static void CopyCaptureIntoClipboard(TextCapture entry)
-    {
-        ImGui.SetClipboardText(entry.Text);
     }
 }

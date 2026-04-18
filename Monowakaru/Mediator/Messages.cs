@@ -1,8 +1,10 @@
-namespace Monowakaru.Mediator;
-
 using System;
-
+using System.Collections.Generic;
+using System.Numerics;
 using DalaMock.Host.Mediator;
+using Monowakaru.Services;
+
+namespace Monowakaru.Mediator;
 
 /// <summary>
 /// Request that a window is toggled.
@@ -21,3 +23,8 @@ public record OpenWindowMessage(Type WindowType) : MessageBase;
 /// </summary>
 /// <param name="WindowType">The type of the window.</param>
 public record CloseWindowMessage(Type WindowType) : MessageBase;
+
+/// <summary>
+///     Published when a text capture is completed.
+/// </summary>
+public record TextCaptureResultMessage(IReadOnlyList<TextCapture> Captures, Vector2 MousePosition) : MessageBase;
