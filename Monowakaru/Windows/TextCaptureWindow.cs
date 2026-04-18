@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
@@ -12,18 +13,20 @@ namespace Monowakaru.Windows;
 [UsedImplicitly]
 public class TextCaptureWindow : Window
 {
-    private readonly IKeyState keyState;
-    private readonly IPluginLog log;
-    private readonly TextCaptureService textCaptureService;
-    private int lastCount;
-    private bool wasApostropheDown;
+    private readonly IKeyState _keyState;
+    private readonly IPluginLog _log;
+    private readonly TextCaptureService _textCaptureService;
+    private IReadOnlyList<TextCapture> _lastCapture;
+    private int _lastCount;
+    private bool _wasApostropheDown;
 
     public TextCaptureWindow(TextCaptureService textCaptureService, IPluginLog log, IKeyState keyState)
         : base("Text Capture##monowakaru-debug")
     {
-        this.textCaptureService = textCaptureService;
-        this.log = log;
-        this.keyState = keyState;
+        _textCaptureService = textCaptureService;
+        _log = log;
+        _keyState = keyState;
+        _lastCapture = [];
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(500, 300),
@@ -33,26 +36,19 @@ public class TextCaptureWindow : Window
 
     public override void Draw()
     {
-        var isApostropheDown = keyState[VirtualKey.OEM_7];
-        if (isApostropheDown && !wasApostropheDown)
-        {
-            var pos = ImGui.GetMousePos();
-            log.Verbose("[TextCapture] Hotkey pressed at ({X}, {Y})", pos.X, pos.Y);
-            textCaptureService.CaptureNodesAt(pos);
-        }
+        var isApostropheDown = _keyState[VirtualKey.OEM_7];
+        if (!isApostropheDown || _wasApostropheDown) return;
 
-        wasApostropheDown = isApostropheDown;
+        var mousePos = ImGui.GetMousePos();
+        _log.Verbose("[TextCapture] Hotkey pressed at ({X}, {Y})", mousePos.X, mousePos.Y);
+        _textCaptureService.CaptureNodesAt(mousePos);
 
-        var captures = textCaptureService.GetCaptures();
+        _wasApostropheDown = isApostropheDown;
 
-        ImGui.Text($"{captures.Length} unique text(s) captured");
+        _lastCapture = _textCaptureService.CaptureNodesAt(mousePos);
+
+        ImGui.Text($"{_lastCapture.Count} captures at ({mousePos.X}, {mousePos.Y})");
         ImGui.SameLine();
-        if (ImGui.Button("Clear"))
-        {
-            textCaptureService.Clear();
-            lastCount = 0;
-        }
-
         ImGui.Separator();
 
         var tableFlags = ImGuiTableFlags.ScrollY
@@ -68,39 +64,34 @@ public class TextCaptureWindow : Window
         if (!table) return;
 
         ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, 65);
         ImGui.TableSetupColumn("Addon", ImGuiTableColumnFlags.WidthFixed, 110);
         ImGui.TableSetupColumn("Text", ImGuiTableColumnFlags.WidthStretch, 1);
-        ImGui.TableSetupColumn("Copy Text", ImGuiTableColumnFlags.WidthStretch, 1);
+        ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 55);
         ImGui.TableHeadersRow();
 
-        foreach (var entry in captures)
+        for (var i = 0; i < _lastCapture.Count; i++)
         {
+            var entry = _lastCapture[i];
             ImGui.TableNextRow();
 
             ImGui.TableSetColumnIndex(0);
-            ImGui.TextUnformatted(entry.CapturedAt.ToString("HH:mm:ss"));
+            ImGui.TextUnformatted(entry.Addon);
 
             ImGui.TableSetColumnIndex(1);
-            ImGui.TextUnformatted(entry.AddonName);
-
-            ImGui.TableSetColumnIndex(2);
             ImGui.TextUnformatted(entry.Text);
 
-            ImGui.TableSetColumnIndex(3);
-            if (ImGui.Button($"Copy##{entry.CapturedAt.Ticks}"))
+            ImGui.TableSetColumnIndex(2);
+            if (ImGui.Button($"Copy##{i}"))
                 CopyCaptureIntoClipboard(entry);
         }
 
         // Auto-scroll to bottom when new entries arrive
-        if (captures.Length > lastCount)
-        {
-            ImGui.SetScrollHereY(1.0f);
-            lastCount = captures.Length;
-        }
+        if (_lastCapture.Count <= _lastCount) return;
+        ImGui.SetScrollHereY(1.0f);
+        _lastCount = _lastCapture.Count;
     }
 
-    private static void CopyCaptureIntoClipboard(CapturedText entry)
+    private static void CopyCaptureIntoClipboard(TextCapture entry)
     {
         ImGui.SetClipboardText(entry.Text);
     }

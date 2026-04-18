@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
@@ -11,14 +10,7 @@ namespace Monowakaru.Services;
 /// <param name="Text">Plain text content, SeString codes stripped.</param>
 /// <param name="ScreenPosition">Top-left corner in screen pixels.</param>
 /// <param name="Size">Width × height in screen pixels (scale applied).</param>
-public readonly record struct AddonTextNode(string Text, Vector2 ScreenPosition, Vector2 Size)
-{
-    public bool Contains(Vector2 point)
-    {
-        return point.X >= ScreenPosition.X && point.X <= ScreenPosition.X + Size.X &&
-               point.Y >= ScreenPosition.Y && point.Y <= ScreenPosition.Y + Size.Y;
-    }
-}
+public readonly record struct AddonTextNode(string Text, Vector2 ScreenPosition, Vector2 Size);
 
 /// <summary>
 ///     Reads text nodes directly from the ATK node tree of a visible game addon.
@@ -42,12 +34,6 @@ public class TextNodeReader(IGameGui gameGui, IPluginLog log)
         log.Verbose("[TNR] {addon}: nodeListCount={count} found {results} text nodes",
             addonName, addon->UldManager.NodeListCount, results.Count);
         return results;
-    }
-
-    /// <summary>Returns all visible text nodes whose bounds contain <paramref name="screenPoint" />.</summary>
-    public IReadOnlyList<AddonTextNode> GetTextNodesAt(string addonName, Vector2 screenPoint)
-    {
-        return GetTextNodes(addonName).Where(n => n.Contains(screenPoint)).ToList();
     }
 
     private static unsafe void CollectFromUldManager(AtkUldManager* mgr, List<AddonTextNode> results)
