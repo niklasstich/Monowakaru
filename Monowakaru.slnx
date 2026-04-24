@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Languages/">
+    <Project Path="Monowakaru.Languages/Monowakaru.Languages.Generators/Monowakaru.Languages.Generators.csproj"/>
     <Project Path="Monowakaru.Languages/Monowakaru.Languages/Monowakaru.Languages.csproj"/>
   </Folder>
   <Project Path="Monowakaru.Mock/Monowakaru.Mock.csproj" />
