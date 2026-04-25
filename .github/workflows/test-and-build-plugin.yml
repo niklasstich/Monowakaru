@@ -1,0 +1,20 @@
+name: Test and build plugin
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    dotnet-version: '10.0.x'
+    
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup dotnet ${{ dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ dotnet-version }}
+      - name: Restore
+        run: dotnet restore Monowakaru.slnx
+      - name: Build
+        run: dotnet build --no-restore Monowakaru.slnx
+      - name: Test
+        run: dotnet test --no-build Monowakaru.slnx
