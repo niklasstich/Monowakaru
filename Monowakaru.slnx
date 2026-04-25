@@ -1,9 +1,13 @@
 <Solution>
-  <Folder Name="/Languages/">
-    <Project Path="Monowakaru.Languages/Monowakaru.Languages.Generators/Monowakaru.Languages.Generators.csproj"/>
-    <Project Path="Monowakaru.Languages/Monowakaru.Languages/Monowakaru.Languages.csproj"/>
-    <Project Path="Monowakaru.Languages\Monowakaru.Languages.Japanese\Monowakaru.Languages.Japanese.csproj"/>
-  </Folder>
-  <Project Path="Monowakaru.Mock/Monowakaru.Mock.csproj" />
-  <Project Path="Monowakaru/Monowakaru.csproj" />
+    <Folder Name="/Languages/">
+        <Project Path="Monowakaru.Languages/Monowakaru.Languages.Generators/Monowakaru.Languages.Generators.csproj"/>
+        <Project Path="Monowakaru.Languages/Monowakaru.Languages/Monowakaru.Languages.csproj"/>
+        <Project Path="Monowakaru.Languages\Monowakaru.Languages.Japanese\Monowakaru.Languages.Japanese.csproj"/>
+    </Folder>
+    <Folder Name="/Languages/Tests/">
+        <Project
+                Path="Monowakaru.Languages/Monowakaru.Languages.Test/Monowakaru.Languages.Test.Japanese/Monowakaru.Languages.Test.Japanese.csproj"/>
+    </Folder>
+    <Project Path="Monowakaru.Mock/Monowakaru.Mock.csproj"/>
+    <Project Path="Monowakaru/Monowakaru.csproj"/>
 </Solution>

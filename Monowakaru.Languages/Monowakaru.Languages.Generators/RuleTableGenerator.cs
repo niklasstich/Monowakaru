@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -6,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Monowakaru.Languages.Generators.Attributes;
 using Monowakaru.Languages.Generators.GenerationTargets;
+using Monowakaru.Languages.Generators.SourceProviders;
 
 namespace Monowakaru.Languages.Generators;
 
@@ -23,9 +23,19 @@ public class RuleTableGenerator : IIncrementalGenerator
         context.RegisterImplementationSourceOutput(ruleTablesToGenerate, Execute);
     }
 
-    private static void Execute(SourceProductionContext arg1, RuleTableGenerationTarget? arg2)
+    private static void Execute(SourceProductionContext context, RuleTableGenerationTarget? target)
     {
-        throw new NotImplementedException();
+        if (target is null) return;
+
+        var result = RuleTableSourceProvider.GetImplementationSource(target);
+
+        foreach (var diagnostic in result.Errors)
+            context.ReportDiagnostic(diagnostic);
+
+        if (!result.Success) return;
+
+        var hintName = $"{target.Namespace}.{target.ClassName}.g.cs";
+        context.AddSource(hintName, result.GeneratedSource!);
     }
 
     private static RuleTableGenerationTarget? TryGetRuleTableGenerationTarget(GeneratorAttributeSyntaxContext ctx)
@@ -38,38 +48,38 @@ public class RuleTableGenerator : IIncrementalGenerator
             .Where(symbol => symbol is IMethodSymbol)
             .Select(symbol => symbol!.ContainingType)
             .Where(containingType => containingType.ToDisplayString() == typeof(InflectionTableAttribute).FullName)
-            .Select(GetRuleTableGenerationTargetFor)
+            .Select(_ => GetRuleTableGenerationTargetFor((INamedTypeSymbol)ctx.TargetSymbol))
             .FirstOrDefault();
     }
 
-    private static RuleTableGenerationTarget GetRuleTableGenerationTargetFor(INamedTypeSymbol containingType)
+    private static RuleTableGenerationTarget GetRuleTableGenerationTargetFor(INamedTypeSymbol targetClass)
     {
-        var containingNamespace = containingType.ContainingNamespace.ToDisplayString();
-        var className = containingType.Name;
-        var rules = ExtractRules(containingType).ToImmutableArray();
+        var containingNamespace = targetClass.ContainingNamespace.ToDisplayString();
+        var className = targetClass.Name;
+        var rules = ExtractRules(targetClass).ToImmutableArray();
         return new RuleTableGenerationTarget(containingNamespace, className, rules);
     }
 
-    private static IEnumerable<RuleGenerationTarget> ExtractRules(INamedTypeSymbol containingType)
+    private static IEnumerable<RuleGenerationTarget> ExtractRules(INamedTypeSymbol targetClass)
     {
-        return ExtractSuffixRules(containingType);
+        return ExtractSuffixRules(targetClass);
     }
 
-    private static IEnumerable<SuffixRuleGenerationTarget> ExtractSuffixRules(INamedTypeSymbol containingType)
+    private static IEnumerable<SuffixRuleGenerationTarget> ExtractSuffixRules(INamedTypeSymbol targetClass)
     {
-        var suffixRuleAttributes = containingType.GetAttributes()
+        var suffixRuleAttributes = targetClass.GetAttributes()
             .Where(attribute => attribute.AttributeClass is not null)
             .Where(attribute =>
-                $"{attribute.AttributeClass!.ContainingNamespace.Name}.{attribute.AttributeClass.Name}" ==
+                $"{attribute.AttributeClass!.ContainingNamespace.ToDisplayString()}.{attribute.AttributeClass.Name}" ==
                 typeof(SuffixRuleAttribute).FullName);
 
         return suffixRuleAttributes.Select(AttributeDataToSuffixRuleTarget);
 
-        SuffixRuleGenerationTarget AttributeDataToSuffixRuleTarget(AttributeData arg1)
+        SuffixRuleGenerationTarget AttributeDataToSuffixRuleTarget(AttributeData data)
         {
-            var inputSuffix = (string)arg1.ConstructorArguments[0].Value!;
-            var outputSuffix = (string)arg1.ConstructorArguments[1].Value!;
-            var form = (string)arg1.ConstructorArguments[2].Value!;
+            var inputSuffix = (string)data.ConstructorArguments[0].Value!;
+            var outputSuffix = (string)data.ConstructorArguments[1].Value!;
+            var form = (string)data.ConstructorArguments[2].Value!;
             return new SuffixRuleGenerationTarget(inputSuffix, outputSuffix, form);
         }
     }
