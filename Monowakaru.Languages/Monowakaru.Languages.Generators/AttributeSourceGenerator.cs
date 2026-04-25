@@ -9,6 +9,13 @@ namespace Monowakaru.Languages.Generators;
 ///     Consumers therefore do not need an assembly reference to the generator project to use the
 ///     attributes — the generator is referenced as an analyzer only.
 /// </summary>
+/// <remarks>
+///     The shapes emitted here MUST match the generator-side attribute classes in
+///     <c>Attributes/SuffixRuleAttribute.cs</c> and <c>Attributes/InflectionTableAttribute.cs</c>,
+///     because <c>RuleTableGenerator</c> reads them from consumer compilations using the same
+///     <c>typeof(...).FullName</c> as the generator-side classes. Adding a property here also
+///     requires reading it back in <c>RuleTableGenerator</c>'s extraction.
+/// </remarks>
 [Generator]
 public class AttributeSourceGenerator : IIncrementalGenerator
 {
@@ -20,11 +27,19 @@ public class AttributeSourceGenerator : IIncrementalGenerator
         namespace Monowakaru.Languages.Generators.Attributes;
 
         /// <summary>
-        ///     Marks a partial class as an inflection rule table. All implementations of
-        ///     <see cref="SuffixRuleAttribute" /> on the class will be emitted in this class.
+        ///     Marks a partial class as an inflection rule table. All <c>SuffixRuleAttribute</c>s on the
+        ///     class contribute records to the generated implementation, and the class itself receives
+        ///     a generated <c>IRuleSet</c> body.
         /// </summary>
         [global::System.AttributeUsage(global::System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-        internal sealed class InflectionTableAttribute : global::System.Attribute;
+        internal sealed class InflectionTableAttribute : global::System.Attribute
+        {
+            /// <summary>CSV of condition IDs used as <c>SuffixRuleAttribute.Accepts</c> when a rule omits its own.</summary>
+            public string DefaultAccepts { get; init; } = "";
+
+            /// <summary>CSV of condition IDs used as <c>SuffixRuleAttribute.Produces</c> when a rule omits its own.</summary>
+            public string DefaultProduces { get; init; } = "";
+        }
         """;
 
     private const string SuffixRuleAttributeSource =
@@ -35,19 +50,20 @@ public class AttributeSourceGenerator : IIncrementalGenerator
         namespace Monowakaru.Languages.Generators.Attributes;
 
         /// <summary>
-        ///     Declares one suffix-swap rule pair within a class marked with
-        ///     <see cref="InflectionTableAttribute" />.
+        ///     Declares one suffix-swap rule pair within a class marked with <c>InflectionTableAttribute</c>.
+        ///     The deinflection inverse is generated automatically by swapping suffixes and accepts/produces.
         /// </summary>
-        /// <param name="inputSuffix">
-        ///     Suffix on the dictionary / base form that this rule applies to.
-        /// </param>
-        /// <param name="outputSuffix">
-        ///     Suffix that replaces <paramref name="inputSuffix" /> after inflection.
-        /// </param>
-        /// <param name="form">
-        ///     Fully-qualified path to a static <c>IInflectionForm</c> property,
-        ///     e.g. <c>"JapaneseForms.TeForm"</c>. Emitted verbatim in the generated code.
-        /// </param>
+        /// <remarks>
+        ///     <para>
+        ///         <c>Accepts</c> and <c>Produces</c> describe the rule in the inflection direction.
+        ///         The deinflection inverse uses <c>Produces</c> as its accepts and <c>Accepts</c> as its produces.
+        ///     </para>
+        ///     <para>
+        ///         CSV strings are comma-separated condition IDs (e.g. <c>"v5"</c> or <c>"v5,v5k"</c>);
+        ///         whitespace is trimmed. Empty strings inherit table-level defaults from
+        ///         <c>InflectionTableAttribute.DefaultAccepts</c> / <c>DefaultProduces</c>.
+        ///     </para>
+        /// </remarks>
         [global::System.AttributeUsage(global::System.AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
         internal sealed class SuffixRuleAttribute : global::System.Attribute
         {
@@ -61,6 +77,12 @@ public class AttributeSourceGenerator : IIncrementalGenerator
             public string InputSuffix { get; }
             public string OutputSuffix { get; }
             public string Form { get; }
+
+            /// <summary>CSV of accepts condition IDs (inflection direction).</summary>
+            public string Accepts { get; init; } = "";
+
+            /// <summary>CSV of produces condition IDs (inflection direction).</summary>
+            public string Produces { get; init; } = "";
         }
         """;
 
