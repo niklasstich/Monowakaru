@@ -3,3 +3,8 @@ obj/
 .idea/
 .vs/
 *.user
+
+
+# ignore worktrees
+worktrees/
+.claude/worktrees/
