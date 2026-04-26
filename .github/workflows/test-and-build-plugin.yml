@@ -3,19 +3,49 @@ on: [push]
 
 env:
   dotnet-version: '10.0.x'
+  plugin-name: Monowakaru
+  plugin-solution: Monowakaru.slnx
+  plugin-release-directory: Monowakaru/bin/Release/Monowakaru
+
 
 jobs:
-  build:
+  build-plugin:
     runs-on: windows-latest
     steps:
+      - name: Set Dalamud variables
+        shell: bash
+        run: |
+          branch="${{ github.ref_name }}"
+          if [[ "$branch" == staging-* ]]; then
+            echo "dalamud-version=Staging" >> "$GITHUB_ENV"
+            echo "dalamud-url=https://goatcorp.github.io/dalamud-distrib/stg/latest.zip" >> "$GITHUB_ENV"
+          elif [[ "$branch" =~ ^api([0-9]+)- ]]; then
+            echo "dalamud-version=API Version ${BASH_REMATCH[1]}" >> "$GITHUB_ENV"
+            echo "dalamud-url=https://goatcorp.github.io/dalamud-distrib/api${BASH_REMATCH[1]}/latest.zip" >> "$GITHUB_ENV"
+          else
+            echo "dalamud-version=latest" >> "$GITHUB_ENV"
+            echo "dalamud-url=https://goatcorp.github.io/dalamud-distrib/latest.zip" >> "$GITHUB_ENV"
+          fi
+      # setup runner
       - uses: actions/checkout@v6
-      - name: Setup dotnet ${{ env.dotnet-version }}
-        uses: actions/setup-dotnet@v4
+      - name: Install .NET
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.dotnet-version }}
-      - name: Restore
-        run: dotnet restore Monowakaru.slnx
-      - name: Build
-        run: dotnet build --no-restore Monowakaru.slnx
-      - name: Test
-        run: dotnet test --no-build Monowakaru.slnx
+          dotnet-version: 10.0.x
+      # restore deps
+      - name: Dotnet restore
+        run: dotnet restore ${{ env.plugin-solution }}
+      - name: Download and extract Dalamud ${{ env.dalamud-version }}
+        run: |
+          Invoke-WebRequest -Uri ${{ env.dalamud-url }} -OutFile dalamud.zip
+          Expand-Archive -Force dalamud.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+          
+      # build
+      - name: Dotnet build
+        run: dotnet build --configuration Release ${{ env.plugin-solution }} 
+
+      # deploy
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ env.plugin-release-directory }}

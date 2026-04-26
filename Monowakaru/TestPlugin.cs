@@ -36,7 +36,6 @@ public class TestPlugin : HostedPlugin
         containerBuilder.RegisterType<WindowService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<ConfigurationService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<CommandService>().AsSelf().AsImplementedInterfaces().SingleInstance();
-        containerBuilder.RegisterType<HotkeyService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<InstallerWindowService>().AsSelf().AsImplementedInterfaces().SingleInstance();
 
         // Register every class ending in Window inside our assembly with the container
