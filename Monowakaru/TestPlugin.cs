@@ -4,6 +4,7 @@ using DalaMock.Host.Hosting;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Microsoft.Extensions.DependencyInjection;
+using Monowakaru.Commands;
 using Monowakaru.Services;
 
 namespace Monowakaru;
@@ -40,7 +41,7 @@ public class TestPlugin : HostedPlugin
         containerBuilder.RegisterType<TextCaptureService>().AsSelf().AsImplementedInterfaces().SingleInstance();
         containerBuilder.RegisterType<TextNodeReader>().AsSelf().SingleInstance();
         containerBuilder.RegisterType<HotkeyService>().AsSelf().AsImplementedInterfaces().SingleInstance();
-        containerBuilder.RegisterType<CaptureTextCommand>().As<IHotkeyCommand>().SingleInstance();
+        containerBuilder.RegisterType<CaptureTextUnderCursorCommand>().As<IHotkeyCommand>().SingleInstance();
 
         // Register every class ending in Window inside our assembly with the container
         containerBuilder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())

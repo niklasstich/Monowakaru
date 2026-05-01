@@ -2,10 +2,11 @@ using DalaMock.Host.Mediator;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
 using Monowakaru.Mediator;
+using Monowakaru.Services;
 
-namespace Monowakaru.Services;
+namespace Monowakaru.Commands;
 
-public class CaptureTextCommand(
+public class CaptureTextUnderCursorCommand(
     Configuration configuration,
     TextCaptureService textCaptureService,
     MediatorService mediatorService) : IHotkeyCommand
